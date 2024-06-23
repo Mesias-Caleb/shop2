@@ -1,6 +1,7 @@
 FROM php:8.1-apache
 
-RUN apt-get update && apt-get install -y \
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
     cron \
     g++ \
     gettext \
@@ -11,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libfreetype6-dev \
     libgd-dev \
-    libmcrypt-dev \
     bzip2 \
     libbz2-dev \
     libtidy-dev \
@@ -19,16 +19,18 @@ RUN apt-get update && apt-get install -y \
     libz-dev \
     libmemcached-dev \
     libxslt-dev \
-    tzdata
+    tzdata \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Configure timezone
+# Configurar la zona horaria
 ENV TZ=America/Lima
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Enable Apache modules
+# Habilitar módulos de Apache
 RUN a2enmod rewrite
 
-# Install PHP extensions
+# Instalar extensiones de PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install mysqli \
@@ -49,15 +51,15 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install tidy \
     && docker-php-ext-install xsl
 
-# Copy the application files into the container
+# Copiar archivos de la aplicación al contenedor
 COPY . /var/www/html/
 
-# Set permissions for the web root
+# Establecer permisos para el directorio raíz web
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Optionally, set PHP configuration (php.ini) if needed
+# Opcionalmente, establecer la configuración de PHP (php.ini) si es necesario
 # COPY php.ini /usr/local/etc/php/
 
-# Start Apache
+# Iniciar Apache
 CMD ["apache2-foreground"]
