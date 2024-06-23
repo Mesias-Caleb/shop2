@@ -1,25 +1,16 @@
 FROM php:8.1-apache
 
-# Instalar dependencias del sistema
+# Instalar dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cron \
-    g++ \
-    gettext \
     libicu-dev \
-    openssl \
-    libc-client-dev \
-    libkrb5-dev \
     libxml2-dev \
     libfreetype6-dev \
-    libgd-dev \
-    bzip2 \
-    libbz2-dev \
-    libtidy-dev \
-    libcurl4-openssl-dev \
-    libz-dev \
-    libmemcached-dev \
-    libxslt-dev \
-    tzdata \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libonig-dev \
+    zip \
+    unzip \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -30,26 +21,18 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Habilitar módulos de Apache
 RUN a2enmod rewrite
 
-# Instalar extensiones de PHP
+# Instalar extensiones de PHP necesarias
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install mysqli \
     && docker-php-ext-install pdo_mysql \
     && docker-php-ext-install intl \
-    && docker-php-ext-install bcmath \
-    && docker-php-ext-install soap \
-    && docker-php-ext-install zip \
-    && docker-php-ext-install bz2 \
-    && docker-php-ext-install calendar \
-    && docker-php-ext-install exif \
-    && docker-php-ext-install gettext \
-    && docker-php-ext-install shmop \
-    && docker-php-ext-install sockets \
-    && docker-php-ext-install sysvmsg \
-    && docker-php-ext-install sysvsem \
-    && docker-php-ext-install sysvshm \
-    && docker-php-ext-install tidy \
-    && docker-php-ext-install xsl
+    && docker-php-ext-install mbstring \
+    && docker-php-ext-install opcache \
+    && docker-php-ext-install zip
+
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copiar archivos de la aplicación al contenedor
 COPY . /var/www/html/
@@ -58,8 +41,8 @@ COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Opcionalmente, establecer la configuración de PHP (php.ini) si es necesario
-# COPY php.ini /usr/local/etc/php/
+# Instalar dependencias de Composer
+RUN cd /var/www/html && composer install
 
 # Iniciar Apache
 CMD ["apache2-foreground"]
